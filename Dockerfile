@@ -30,7 +30,7 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 # Set environment variables
-ENV DJANGO_SETTINGS_MODULE=masjid_display_service.settings
+ENV DJANGO_SETTINGS_MODULE=donation_service.settings
 ENV PYTHONUNBUFFERED=1
 
 # Expose port for uWSGI/Django
