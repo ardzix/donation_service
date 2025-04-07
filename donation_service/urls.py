@@ -16,6 +16,7 @@ from campaigns.views import (
     homepage
 )
 from common.views import FileViewSet
+from common.views.chunk_upload import ChunkUploadViewSet
 
 # Setup router
 router = DefaultRouter()
@@ -25,7 +26,8 @@ router.register(r'donations', DonationViewSet, basename='donation')
 router.register(r'expenses', ExpenseViewSet, basename='expense')
 router.register(r'allocations', FundAllocationViewSet, basename='allocation')
 router.register(r'withdrawals', FundWithdrawalRequestViewSet, basename='withdrawal')
-router.register(r'common/file', FileViewSet, basename='file')
+router.register(r'file/upload', FileViewSet, basename='file_upload')
+router.register(r'file/chunk-upload', ChunkUploadViewSet, basename='file_chunk_upload')
 
 # Swagger schema config
 schema_view = get_schema_view(

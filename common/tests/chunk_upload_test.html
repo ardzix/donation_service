@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chunk Upload with JWT and Progress</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 40px;
+    }
+
+    #progressBar {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    #progress {
+      height: 20px;
+      width: 0%;
+      background-color: #4caf50;
+      border-radius: 6px;
+      text-align: center;
+      color: white;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📤 Chunked File Upload</h2>
+
+  <label for="jwtToken">🔐 Paste JWT Token:</label><br>
+  <input type="text" id="jwtToken" placeholder="Bearer ey..." />
+
+  <label for="uploadFile">🖼️ Select File:</label><br>
+  <input type="file" id="uploadFile" accept="image/*" />
+
+  <br>
+  <button id="uploadBtn">⬆️ Upload</button>
+
+  <div id="progressBar">
+    <div id="progress">0%</div>
+  </div>
+
+  <pre id="log" style="margin-top: 20px;"></pre>
+
+  <script>
+    const CHUNK_SIZE = 1024 * 300;
+    const UPLOAD_URL = 'http://127.0.0.1:8000/api/file/chunk-upload/';
+
+    const fileInput = document.getElementById('uploadFile');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const progress = document.getElementById('progress');
+    const log = document.getElementById('log');
+    const jwtTokenInput = document.getElementById('jwtToken');
+
+    uploadBtn.addEventListener('click', async () => {
+      const token = jwtTokenInput.value.trim();
+      if (!token.startsWith('Bearer ')) {
+        alert("Please paste a valid Bearer token (starting with 'Bearer ').");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select a file.");
+        return;
+      }
+
+      const headers = {
+        'Authorization': token,
+        'Content-Type': 'application/json',
+      };
+
+      const fileName = file.name;
+      const base64Data = await fileToBase64(file);
+      const chunks = splitBase64(base64Data, CHUNK_SIZE);
+      const checksum = CryptoJS.MD5(base64Data).toString();
+
+      logMessage("📦 Initializing upload...");
+      await fetch(UPLOAD_URL + "?is_init=true", {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ file_name: fileName }),
+      });
+
+      for (let i = 0; i < chunks.length; i++) {
+        const payload = {
+          file_name: fileName,
+          chunk: chunks[i],
+          chunk_no: i,
+          chunk_count: chunks.length,
+        };
+
+        const res = await fetch(UPLOAD_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        const percent = Math.round(((i + 1) / chunks.length) * 100);
+        progress.style.width = percent + '%';
+        progress.innerText = percent + '%';
+
+        logMessage(`✅ Uploaded chunk ${i + 1}/${chunks.length} [Status: ${res.status}]`);
+        if (!res.ok) {
+          logMessage("❌ Error uploading chunk: " + await res.text());
+          return;
+        }
+      }
+
+      logMessage("🧾 Finalizing upload...");
+      const finalizeRes = await fetch(UPLOAD_URL + "?is_checksum=true", {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          file_name: fileName,
+          chunk_count: chunks.length,
+          checksum,
+        }),
+      });
+
+      const response = await safeJson(finalizeRes);
+      logMessage("✅ Final response:");
+      logMessage(JSON.stringify(response, null, 2));
+    });
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function splitBase64(base64, size) {
+      return base64.match(new RegExp(`.{1,${size}}`, 'g')) || [];
+    }
+
+    async function safeJson(res) {
+      try {
+        return await res.json();
+      } catch {
+        return { status: res.status, text: await res.text() };
+      }
+    }
+
+    function logMessage(message) {
+      log.innerText += message + '\n';
+      log.scrollTop = log.scrollHeight;
+    }
+  </script>
+
+</body>
+</html>
