@@ -4,6 +4,33 @@ from rest_framework import serializers
 from rest_framework import serializers
 from ..models import File
 
+def serialize_fields(instance, representation, field_serializer_map):
+    """
+    Serialize one or more fields of a serializer instance and insert into the representation.
+    
+    Parameters:
+    - instance: the model instance being serialized
+    - representation: the dictionary being returned by to_representation
+    - field_serializer_map: a dict of field_name: (serializer_class, many_bool)
+    """
+    for field_name, (serializer_class, many) in field_serializer_map.items():
+        field_value = getattr(instance, field_name, None)
+
+        if field_value is None:
+            continue
+
+        if many:
+            # Handles ManyToMany or reverse FK (related managers with `.all()`)
+            if hasattr(field_value, 'all'):
+                serialized = serializer_class(field_value.all(), many=True).data
+            elif isinstance(field_value, (list, tuple)):
+                serialized = serializer_class(field_value, many=True).data
+            else:
+                continue  # not a valid many field
+        else:
+            serialized = serializer_class(field_value).data
+
+        representation[field_name] = serialized
 
 class FileSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()

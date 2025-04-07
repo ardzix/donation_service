@@ -28,6 +28,7 @@ USE_GCS = getattr(settings, "USE_GCS", False)
 USE_RACKSPACE = getattr(settings, "USE_RACKSPACE", False)
 GCS_BASE_URL = getattr(settings, "GCS_BASE_URL", "")
 RACKSPACE_BASE_URL = getattr(settings, "RACKSPACE_BASE_URL", "")
+BUCKET_LOCATION = getattr(settings, "BUCKET_LOCATION", "file")
 
 # for DO bucket location
 USE_DEFAULT_LOCATION = getattr(settings, "USE_DEFAULT_LOCATION", False)
@@ -61,47 +62,12 @@ if USE_DO_SPACE and DO_SPACE_LOCATION:
     ROOT_URL = DO_SPACE_LOCATION
 
 if USE_S3 or USE_DO_SPACE:
-    VIDEO_STORAGE = S3Boto3Storage(
-        location=get_bucket_location("video"), file_overwrite=False
-    )
     FILE_STORAGE = S3Boto3Storage(
-        location=get_bucket_location("file"), file_overwrite=False
+        location=get_bucket_location(BUCKET_LOCATION), file_overwrite=False
     )
-    AVATAR_STORAGE = S3Boto3Storage(
-        location=get_bucket_location("picture/avatar"), file_overwrite=False
-    )
-    COVER_STORAGE = S3Boto3Storage(
-        location=get_bucket_location("picture/cover"), file_overwrite=False
-    )
-    LOGO_STORAGE = S3Boto3Storage(
-        location=get_bucket_location("picture/logo"), file_overwrite=False
-    )
-    PICTURE_STORAGE = S3Boto3Storage(
-        location=get_bucket_location("picture/others"), file_overwrite=False
-    )
-
 else:
-    VIDEO_STORAGE = FileSystemStorage(
-        location="%s/video" % MEDIA_ROOT, base_url="%svideo/" % UPLOAD_ROOT
-    )
     FILE_STORAGE = FileSystemStorage(
-        location="%s/file" % MEDIA_ROOT, base_url="%sfile/" % UPLOAD_ROOT
-    )
-    AVATAR_STORAGE = FileSystemStorage(
-        location="%s/picture/avatar" % MEDIA_ROOT,
-        base_url="%spicture/avatar/" % UPLOAD_ROOT,
-    )
-    COVER_STORAGE = FileSystemStorage(
-        location="%s/picture/cover" % MEDIA_ROOT,
-        base_url="%spicture/cover/" % UPLOAD_ROOT,
-    )
-    LOGO_STORAGE = FileSystemStorage(
-        location="%s/picture/logo" % MEDIA_ROOT,
-        base_url="%spicture/logo/" % UPLOAD_ROOT,
-    )
-    PICTURE_STORAGE = FileSystemStorage(
-        location="%s/picture/others" % MEDIA_ROOT,
-        base_url="%spicture/others/" % UPLOAD_ROOT,
+        location=f"{MEDIA_ROOT}/{BUCKET_LOCATION}", base_url=f"{UPLOAD_ROOT}{BUCKET_LOCATION}"
     )
 
 

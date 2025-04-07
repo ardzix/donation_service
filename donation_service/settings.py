@@ -137,6 +137,7 @@ STATICFILES_FINDERS = (
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
     # 'compressor.finders.CompressorFinder',
 )
+MEDIA_ROOT = "upload/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -207,3 +208,5 @@ SIMPLE_JWT = {
 
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+BUCKET_LOCATION = 'donation'

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
+from common.models import File
 import uuid
 
 class Campaign(models.Model):
@@ -24,6 +25,9 @@ class Campaign(models.Model):
     verified = models.BooleanField(default=False, help_text="Admin verification status.")
     is_deleted = models.BooleanField(default=False, help_text="Soft delete flag.")
 
+    featured_image = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True, related_name="campaign_featured_image")
+    images = models.ManyToManyField(File, blank=True, related_name="campaign_images")
+
     class Meta:
         verbose_name = "Campaign"
         verbose_name_plural = "Campaigns"
@@ -43,7 +47,7 @@ class Placement(models.Model):
                                  help_text="Associated campaign for this placement.")
     name = models.CharField(max_length=255, help_text="Name of the placement (e.g., 'Website Banner').")
     url = models.URLField(help_text="URL where this placement leads to.")
-    qr_code = models.ImageField(upload_to="qrcodes/", blank=True, null=True,
+    qr_code = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True,
                                 help_text="QR code image for offline tracking.")
     created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when the placement was created.")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="placements",
@@ -98,6 +102,7 @@ class Expense(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="expenses",
                                    help_text="User who created the expense record.")
     is_deleted = models.BooleanField(default=False, help_text="Soft delete flag.")
+    receipt = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True)
 
     class Meta:
         verbose_name = "Expense"

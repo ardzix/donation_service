@@ -31,11 +31,12 @@ class CampaignViewSet(ModelViewSet):
     Public can view campaign detail by external_id.
     """
     queryset = Campaign.objects.filter(is_deleted=False)
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['is_active', 'verified']
     search_fields = ['title', 'description']
     ordering_fields = ['start_date', 'total_donated', 'unallocated_amount']
+    lookup_field = "external_id"
 
     def get_queryset(self):
         user = self.request.user
@@ -47,7 +48,7 @@ class CampaignViewSet(ModelViewSet):
         """
         Get object using external_id instead of PK.
         """
-        return Campaign.objects.get(external_id=self.kwargs["pk"])
+        return Campaign.objects.get(external_id=self.kwargs["external_id"])
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -67,9 +68,10 @@ class BaseCampaignRelatedViewSet(ModelViewSet):
     Base viewset for all models related to Campaign via ForeignKey.
     Requires `?campaign=<uuid>` in query param.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['campaign']
+    lookup_field = "external_id"
 
     campaign_param = openapi.Parameter(
         name='campaign',
@@ -138,7 +140,7 @@ class FundAllocationViewSet(ReadOnlyModelViewSet):
     """
     queryset = FundAllocation.objects.select_related('donation', 'expense')
     serializer_class = FundAllocationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['donation', 'expense']
     search_fields = ['donation__donor__username', 'expense__description']
