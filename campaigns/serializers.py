@@ -24,7 +24,7 @@ class PlacementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Placement
         fields = '__all__'
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'created_at', 'is_deleted']
 
 
 class DonationSerializer(serializers.ModelSerializer):
@@ -48,7 +48,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = '__all__'
-        read_only_fields = ['id', 'timestamp']
+        read_only_fields = ['id', 'timestamp', 'is_deleted']
 
 
 class FundAllocationSerializer(serializers.ModelSerializer):
@@ -105,5 +105,5 @@ class CampaignDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campaign
         fields = '__all__'
-        read_only_fields = ['id', 'total_donated',
+        read_only_fields = ['id', 'total_donated', 'is_deleted', 'verified',
                             'unallocated_amount', 'start_date', 'organizer']

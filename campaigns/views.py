@@ -39,9 +39,12 @@ class CampaignViewSet(ModelViewSet):
     lookup_field = "external_id"
 
     def get_queryset(self):
-        user = self.request.user
         if self.action == 'retrieve':
             return Campaign.objects.filter(is_deleted=False)
+        elif not self.request.user.is_authenticated:
+            return Campaign.objects.none()
+        user = self.request.user
+        print(user)
         return Campaign.objects.filter(is_deleted=False, organizer=user)
 
     def get_object(self):
