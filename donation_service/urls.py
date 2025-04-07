@@ -26,8 +26,8 @@ router.register(r'donations', DonationViewSet, basename='donation')
 router.register(r'expenses', ExpenseViewSet, basename='expense')
 router.register(r'allocations', FundAllocationViewSet, basename='allocation')
 router.register(r'withdrawals', FundWithdrawalRequestViewSet, basename='withdrawal')
-router.register(r'file/upload', FileViewSet, basename='file_upload')
-router.register(r'file/chunk-upload', ChunkUploadViewSet, basename='file_chunk_upload')
+router.register(r'files/upload', FileViewSet, basename='file_upload')
+router.register(r'files/chunk-upload', ChunkUploadViewSet, basename='file_chunk_upload')
 
 # Swagger schema config
 schema_view = get_schema_view(
