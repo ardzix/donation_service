@@ -8,6 +8,10 @@ from io import BytesIO
 
 import time
 from PIL import UnidentifiedImageError
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def wait_for_file_access(file_field, retries=5, delay=0.5):
     """
@@ -140,6 +144,9 @@ def generate_donation_card(placement_id):
         placement.donation_card = file
         placement.save(update_fields=["donation_card"])
 
+        logger.info(f"Donation card created: {placement.donation_card.file.url}")
+
+
     except Placement.DoesNotExist:
         pass
 
@@ -176,6 +183,8 @@ def generate_qr_for_placement(placement_id):
 
         placement.qr_code = file
         placement.save(update_fields=['qr_code'])
+
+        logger.info(f"QR Code created: {placement.qr_code.file.url}")
 
 
     except Placement.DoesNotExist:
