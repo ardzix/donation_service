@@ -20,6 +20,7 @@ class PlacementSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         serialize_fields(instance, representation, {
             'qr_code': (FileLiteSerializer, False),
+            'donation_card': (FileLiteSerializer, False),
         })
         return representation
 
@@ -27,7 +28,7 @@ class PlacementSerializer(serializers.ModelSerializer):
         model = Placement
         exclude = ['id']
         read_only_fields = ['created_at', 'is_deleted',
-                            'qr_code', 'url', 'created_by']
+                            'qr_code', 'donation_card', 'url', 'created_by']
 
 
 class DonationSerializer(serializers.ModelSerializer):
