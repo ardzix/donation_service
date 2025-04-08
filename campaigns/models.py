@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
 from common.models import File
+from auditlog.models import LogEntry
+from django.contrib.contenttypes.fields import GenericRelation
 from .mixins import SoftDeleteMixin
 import uuid
 
@@ -33,7 +35,7 @@ class Campaign(SoftDeleteMixin, models.Model):
 
     featured_image = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True, related_name="campaign_featured_image")
     images = models.ManyToManyField(File, blank=True, related_name="campaign_images")
-
+    audit_logs = GenericRelation(LogEntry)
 
     objects = ActiveManager()  # only non-deleted by default
     all_objects = models.Manager()  # in case you still want full access somewhere
@@ -57,13 +59,15 @@ class Placement(SoftDeleteMixin, models.Model):
                                  help_text="Associated campaign for this placement.")
     name = models.CharField(max_length=255, help_text="Name of the placement (e.g., 'Website Banner').")
     url = models.URLField(blank=True, null=True, help_text="URL where this placement leads to.")
-    qr_code = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True,
+    qr_code = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True, related_name="qr_code",
+                                help_text="QR code image for offline tracking.")
+    donation_card = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True, related_name="donation_card",
                                 help_text="QR code image for offline tracking.")
     created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when the placement was created.")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="placements",
                                    help_text="User who created this placement.")
     is_deleted = models.BooleanField(default=False, help_text="Soft delete flag.")
-
+    audit_logs = GenericRelation(LogEntry)
 
     objects = ActiveManager()  # only non-deleted by default
     all_objects = models.Manager()  # in case you still want full access somewhere
@@ -99,9 +103,10 @@ class Donation(models.Model):
                               help_text="User who made the donation.")
     amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="Amount donated.")
     timestamp = models.DateTimeField(auto_now_add=True, help_text="Donation timestamp.")
-    transaction_id = models.CharField(max_length=255, unique=True, help_text="Unique transaction ID for tracking.")
+    transaction_id = models.CharField(max_length=255, blank=True, null=True)
     is_fully_allocated = models.BooleanField(default=False, help_text="Flag indicating if the donation is fully used.")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, help_text="Donation payment status.")
+    audit_logs = GenericRelation(LogEntry)
 
     class Meta:
         verbose_name = "Donation"
@@ -126,7 +131,7 @@ class Expense(SoftDeleteMixin, models.Model):
                                    help_text="User who created the expense record.")
     is_deleted = models.BooleanField(default=False, help_text="Soft delete flag.")
     receipt = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True)
-
+    audit_logs = GenericRelation(LogEntry)
 
     objects = ActiveManager()  # only non-deleted by default
     all_objects = models.Manager()  # in case you still want full access somewhere
@@ -151,6 +156,7 @@ class FundAllocation(models.Model):
     expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="allocations",
                                 help_text="Expense to which the donation is allocated.")
     allocated_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="Amount allocated from donation.")
+    audit_logs = GenericRelation(LogEntry)
 
     class Meta:
         verbose_name = "Fund Allocation"
@@ -177,7 +183,8 @@ class FundWithdrawalRequest(models.Model):
     reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="withdrawal_reviews",
                                     help_text="Admin who reviewed the request.")
     reviewed_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when request was reviewed.")
-
+    audit_logs = GenericRelation(LogEntry)
+    
     class Meta:
         verbose_name = "Fund Withdrawal Request"
         verbose_name_plural = "Fund Withdrawal Requests"

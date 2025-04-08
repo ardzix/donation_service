@@ -26,13 +26,16 @@ class PlacementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Placement
         exclude = ['id']
-        read_only_fields = ['created_at', 'is_deleted', 'qr_code', 'url', 'created_by']
+        read_only_fields = ['created_at', 'is_deleted',
+                            'qr_code', 'url', 'created_by']
 
 
 class DonationSerializer(serializers.ModelSerializer):
+    # User only provides placement; campaign is inferred
     campaign = serializers.SlugRelatedField(
         slug_field='external_id',
-        queryset=Campaign.objects.all()
+        queryset=Campaign.objects.all(),
+        required=False  # We’ll set this internally
     )
     placement = serializers.SlugRelatedField(
         slug_field='external_id',
@@ -44,7 +47,16 @@ class DonationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Donation
         exclude = ['id']
-        read_only_fields = ['timestamp', 'status', 'transaction_id', 'is_fully_allocated', 'donor']
+        read_only_fields = ['timestamp', 'status', 'transaction_id',
+                            'is_fully_allocated', 'donor', 'campaign']
+
+    def validate(self, attrs):
+        placement = attrs.get("placement")
+
+        if placement and not attrs.get("campaign"):
+            attrs["campaign"] = placement.campaign
+
+        return attrs
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -90,7 +102,8 @@ class FundWithdrawalRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FundWithdrawalRequest
         exclude = ['id']
-        read_only_fields = ['timestamp', 'reviewed_at', 'reviewed_by', 'requested_by', 'is_approved']
+        read_only_fields = ['timestamp', 'reviewed_at',
+                            'reviewed_by', 'requested_by', 'is_approved']
 
 
 class CampaignListSerializer(serializers.ModelSerializer):
@@ -111,7 +124,8 @@ class CampaignDetailSerializer(serializers.ModelSerializer):
     placements = PlacementSerializer(many=True, read_only=True)
     donations = DonationSerializer(many=True, read_only=True)
     expenses = ExpenseSerializer(many=True, read_only=True)
-    withdrawal_requests = FundWithdrawalRequestSerializer(many=True, read_only=True)
+    withdrawal_requests = FundWithdrawalRequestSerializer(
+        many=True, read_only=True)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
