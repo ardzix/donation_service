@@ -26,10 +26,6 @@ from .serializers import (
 
 
 class CampaignViewSet(ModelViewSet):
-    """
-    Campaigns are UGC. Users can only list/create/update their own campaigns.
-    Public can view campaign detail by external_id.
-    """
     queryset = Campaign.objects.filter(is_deleted=False)
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -44,13 +40,9 @@ class CampaignViewSet(ModelViewSet):
         elif not self.request.user.is_authenticated:
             return Campaign.objects.none()
         user = self.request.user
-        print(user)
         return Campaign.objects.filter(is_deleted=False, organizer=user)
 
     def get_object(self):
-        """
-        Get object using external_id instead of PK.
-        """
         return Campaign.objects.get(external_id=self.kwargs["external_id"])
 
     def get_serializer_class(self):
@@ -62,18 +54,10 @@ class CampaignViewSet(ModelViewSet):
         serializer.save(organizer=self.request.user)
 
 
-# ============================
-# Base Class for Related Models
-# ============================
-
 class BaseCampaignRelatedViewSet(ModelViewSet):
-    """
-    Base viewset for all models related to Campaign via ForeignKey.
-    Requires `?campaign=<uuid>` in query param.
-    """
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['campaign']
+    filterset_fields = ['campaign__external_id']
     lookup_field = "external_id"
 
     campaign_param = openapi.Parameter(
@@ -98,22 +82,18 @@ class BaseCampaignRelatedViewSet(ModelViewSet):
             campaign__organizer=self.request.user
         )
 
-    def perform_create(self, serializer):
-        campaign = serializer.validated_data.get('campaign')
-        if campaign.organizer != self.request.user:
-            raise PermissionDenied("You do not have permission to modify this campaign.")
-        serializer.save()
-
-
-# ============================
-# ViewSets for Related Models
-# ============================
 
 class PlacementViewSet(BaseCampaignRelatedViewSet):
     queryset = Placement.objects.filter(is_deleted=False)
     serializer_class = PlacementSerializer
     search_fields = ['name', 'campaign__title']
     ordering_fields = ['created_at']
+
+    def perform_create(self, serializer):
+        campaign = serializer.validated_data.get('campaign')
+        if campaign.organizer != self.request.user:
+            raise PermissionDenied("You do not have permission to modify this campaign.")
+        serializer.save(created_by=self.request.user)
 
 
 class DonationViewSet(BaseCampaignRelatedViewSet):
@@ -122,12 +102,23 @@ class DonationViewSet(BaseCampaignRelatedViewSet):
     search_fields = ['donor__username', 'transaction_id']
     ordering_fields = ['timestamp', 'amount']
 
+    def perform_create(self, serializer):
+        donor = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(donor=donor)
+
+
 
 class ExpenseViewSet(BaseCampaignRelatedViewSet):
     queryset = Expense.objects.filter(is_deleted=False)
     serializer_class = ExpenseSerializer
     search_fields = ['description', 'campaign__title']
     ordering_fields = ['timestamp', 'amount']
+
+    def perform_create(self, serializer):
+        campaign = serializer.validated_data.get('campaign')
+        if campaign.organizer != self.request.user:
+            raise PermissionDenied("You do not have permission to modify this campaign.")
+        serializer.save(created_by=self.request.user)
 
 
 class FundWithdrawalRequestViewSet(BaseCampaignRelatedViewSet):
@@ -136,11 +127,14 @@ class FundWithdrawalRequestViewSet(BaseCampaignRelatedViewSet):
     search_fields = ['campaign__title', 'requested_by__username']
     ordering_fields = ['timestamp', 'amount']
 
+    def perform_create(self, serializer):
+        campaign = serializer.validated_data.get('campaign')
+        if campaign.organizer != self.request.user:
+            raise PermissionDenied("You do not have permission to request withdrawals for this campaign.")
+        serializer.save(requested_by=self.request.user)
+
 
 class FundAllocationViewSet(ReadOnlyModelViewSet):
-    """
-    Read-only view for Fund Allocations. Requires ?campaign=<uuid>
-    """
     queryset = FundAllocation.objects.select_related('donation', 'expense')
     serializer_class = FundAllocationSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -167,6 +161,7 @@ class FundAllocationViewSet(ReadOnlyModelViewSet):
             raise PermissionDenied("The 'campaign' query parameter is required.")
         return super().get_queryset().filter(expense__campaign__external_id=campaign_uuid,
                                              expense__campaign__organizer=self.request.user)
+
 
 
 from django.shortcuts import render

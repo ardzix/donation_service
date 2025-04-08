@@ -1,4 +1,4 @@
-from django.contrib import admin
+from campaigns.admin import custom_admin_site
 from django.urls import path, include
 from django.conf import settings
 from rest_framework.routers import DefaultRouter
@@ -52,6 +52,6 @@ urlpatterns = [
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 ]
 if settings.DEBUG:
-    urlpatterns.append(path('admin/', admin.site.urls))
+    urlpatterns.append(path('admin/', custom_admin_site.urls))
 else:
-    urlpatterns.append(path('admin-kmzway87aa/', admin.site.urls))
+    urlpatterns.append(path('admin-kmzway87aa/', custom_admin_site.urls))

@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'auditlog',
     'corsheaders',  # For handling CORS (optional)
+    'django_q',
     'common',  # Your new app
     'django_filters',
     'campaigns',
@@ -210,3 +211,20 @@ SIMPLE_JWT = {
 CORS_ORIGIN_ALLOW_ALL = True
 
 BUCKET_LOCATION = 'donation'
+
+Q_CLUSTER = {
+    "name": "donation-cluster",
+    "workers": 4,
+    "timeout": 90,
+    "retry": 120,
+    "queue_limit": 50,
+    "bulk": 10,
+    "orm": "default",  # Optional if not using Redis
+    "label": "Django Q Cluster",
+    "broker": "django_q.brokers.redis_broker.Redis",
+    "redis": {
+        "host": "localhost",  # or the name of your Redis container/service
+        "port": 6379,
+        "db": 0,
+    },
+}

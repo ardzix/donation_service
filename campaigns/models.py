@@ -2,9 +2,15 @@ from django.db import models
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
 from common.models import File
+from .mixins import SoftDeleteMixin
 import uuid
 
-class Campaign(models.Model):
+class ActiveManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
+class Campaign(SoftDeleteMixin, models.Model):
     """
     Represents a fundraising campaign. Users can donate to a campaign,
     and campaign owners can create expenses to track fund usage.
@@ -28,6 +34,10 @@ class Campaign(models.Model):
     featured_image = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True, related_name="campaign_featured_image")
     images = models.ManyToManyField(File, blank=True, related_name="campaign_images")
 
+
+    objects = ActiveManager()  # only non-deleted by default
+    all_objects = models.Manager()  # in case you still want full access somewhere
+
     class Meta:
         verbose_name = "Campaign"
         verbose_name_plural = "Campaigns"
@@ -37,7 +47,7 @@ class Campaign(models.Model):
 
 auditlog.register(Campaign)
 
-class Placement(models.Model):
+class Placement(SoftDeleteMixin, models.Model):
     """
     Represents a placement (e.g., billboard, web banner) where a campaign is advertised.
     Each placement generates a unique URL or QR code for tracking donations.
@@ -46,13 +56,17 @@ class Placement(models.Model):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="placements",
                                  help_text="Associated campaign for this placement.")
     name = models.CharField(max_length=255, help_text="Name of the placement (e.g., 'Website Banner').")
-    url = models.URLField(help_text="URL where this placement leads to.")
+    url = models.URLField(blank=True, null=True, help_text="URL where this placement leads to.")
     qr_code = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True,
                                 help_text="QR code image for offline tracking.")
     created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when the placement was created.")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="placements",
                                    help_text="User who created this placement.")
     is_deleted = models.BooleanField(default=False, help_text="Soft delete flag.")
+
+
+    objects = ActiveManager()  # only non-deleted by default
+    all_objects = models.Manager()  # in case you still want full access somewhere
 
     class Meta:
         verbose_name = "Placement"
@@ -68,6 +82,14 @@ class Donation(models.Model):
     Represents a donation made to a campaign through a specific placement.
     Donations are allocated to expenses on a FIFO basis.
     """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+
     external_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, help_text="Public UUID for external reference.")
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="donations",
                                  help_text="Campaign to which the donation was made.")
@@ -79,6 +101,7 @@ class Donation(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, help_text="Donation timestamp.")
     transaction_id = models.CharField(max_length=255, unique=True, help_text="Unique transaction ID for tracking.")
     is_fully_allocated = models.BooleanField(default=False, help_text="Flag indicating if the donation is fully used.")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, help_text="Donation payment status.")
 
     class Meta:
         verbose_name = "Donation"
@@ -89,7 +112,7 @@ class Donation(models.Model):
 
 auditlog.register(Donation)
 
-class Expense(models.Model):
+class Expense(SoftDeleteMixin, models.Model):
     """
     Represents an expense made for a campaign. Donations are automatically allocated to cover expenses.
     """
@@ -103,6 +126,10 @@ class Expense(models.Model):
                                    help_text="User who created the expense record.")
     is_deleted = models.BooleanField(default=False, help_text="Soft delete flag.")
     receipt = models.ForeignKey(File, on_delete=models.SET_NULL, blank=True, null=True)
+
+
+    objects = ActiveManager()  # only non-deleted by default
+    all_objects = models.Manager()  # in case you still want full access somewhere
 
     class Meta:
         verbose_name = "Expense"

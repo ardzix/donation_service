@@ -1,0 +1,14 @@
+{% extends "admin/index.html" %}
+{% load static %}
+
+{% block content %}
+    {% if pending_withdrawals_count %}
+        <div class="notification-banner" style="background:#ffc; border:1px solid #f90; padding:10px; margin-bottom:15px;">
+            🔔 You have <strong>{{ pending_withdrawals_count }}</strong> pending fund withdrawal request(s).
+            <a href="{% url 'admin:campaigns_fundwithdrawalrequest_changelist' %}?is_approved__exact=0">
+                Review now →
+            </a>
+        </div>
+    {% endif %}
+    {{ block.super }}
+{% endblock %}
