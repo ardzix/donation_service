@@ -145,6 +145,7 @@ def generate_donation_card(placement_id):
         placement.save(update_fields=["donation_card"])
 
         logger.info(f"Donation card created: {placement.donation_card.file.url}")
+        return placement.donation_card.file.url
 
 
     except Placement.DoesNotExist:
@@ -185,6 +186,7 @@ def generate_qr_for_placement(placement_id):
         placement.save(update_fields=['qr_code'])
 
         logger.info(f"QR Code created: {placement.qr_code.file.url}")
+        return placement.donation_card.file.url
 
 
     except Placement.DoesNotExist:
