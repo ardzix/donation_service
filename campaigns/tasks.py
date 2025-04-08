@@ -1,5 +1,7 @@
 import qrcode
 import io
+import os
+from django.conf import settings
 from django.core.files.base import ContentFile
 from campaigns.models import Placement
 from common.models import File
@@ -72,8 +74,9 @@ def generate_donation_card(placement_id):
 
         # Font
         try:
+            font_path = os.path.join(settings.BASE_DIR, "assets", "fonts", "dejavu-sans-boldttf")
             font_size = int(target_height * 0.04)
-            font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+            font = ImageFont.truetype(font_path, font_size)
         except IOError:
             font = ImageFont.load_default()
 
@@ -137,7 +140,7 @@ def generate_donation_card(placement_id):
         buffer.seek(0)
 
         filename = f"donation_card_{placement.external_id}.jpg"
-        file, _ = File.objects.get_or_create(name=filename)
+        file = File.objects.create(name=filename)
         file.file.save(filename, ContentFile(buffer.getvalue()), save=True)
         buffer.close()
 
@@ -178,7 +181,7 @@ def generate_qr_for_placement(placement_id):
 
         filename = f"placement_qr_{placement.external_id}.png"
 
-        file, _ = File.objects.get_or_create(name=filename)
+        file = File.objects.create(name=filename)
         file.file.save(filename, ContentFile(buffer.getvalue()), save=True)
         buffer.close()
 
