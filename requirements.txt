@@ -1,4 +1,5 @@
 asgiref==3.8.1
+async-timeout==5.0.1
 boto3==1.35.92
 botocore==1.35.92
 certifi==2024.12.14
@@ -10,6 +11,8 @@ django-auditlog==3.0.0
 django-cors-headers==4.6.0
 django-extensions==3.2.3
 django-filter==24.3
+django-picklefield==3.3
+django-q2==1.7.6
 django-storages==1.13.2
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
@@ -28,6 +31,8 @@ PyJWT==2.10.1
 python-dateutil==2.9.0.post0
 pytz==2024.2
 PyYAML==6.0.2
+qrcode==8.1
+redis==5.2.1
 requests==2.32.3
 s3transfer==0.10.4
 six==1.17.0
