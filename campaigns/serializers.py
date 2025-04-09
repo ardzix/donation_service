@@ -125,8 +125,7 @@ class CampaignDetailSerializer(serializers.ModelSerializer):
     placements = PlacementSerializer(many=True, read_only=True)
     donations = DonationSerializer(many=True, read_only=True)
     expenses = ExpenseSerializer(many=True, read_only=True)
-    withdrawal_requests = FundWithdrawalRequestSerializer(
-        many=True, read_only=True)
+    withdrawal_requests = FundWithdrawalRequestSerializer(many=True, read_only=True)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -139,7 +138,12 @@ class CampaignDetailSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         placements_data = validated_data.pop('placements', [])
         expenses_data = validated_data.pop('expenses', [])
+        images_data = validated_data.pop('images', [])
+
         campaign = Campaign.objects.create(**validated_data)
+
+        if images_data:
+            campaign.images.set(images_data)
 
         for placement_data in placements_data:
             Placement.objects.create(campaign=campaign, **placement_data)
@@ -152,7 +156,12 @@ class CampaignDetailSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         placements_data = validated_data.pop('placements', [])
         expenses_data = validated_data.pop('expenses', [])
+        images_data = validated_data.pop('images', None)
+
         instance = super().update(instance, validated_data)
+
+        if images_data is not None:
+            instance.images.set(images_data)
 
         instance.placements.all().delete()
         for placement_data in placements_data:
@@ -167,5 +176,7 @@ class CampaignDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campaign
         exclude = ['id']
-        read_only_fields = ['total_donated', 'is_deleted', 'verified',
-                            'unallocated_amount', 'start_date', 'organizer']
+        read_only_fields = [
+            'total_donated', 'is_deleted', 'verified',
+            'unallocated_amount', 'start_date', 'organizer'
+        ]
